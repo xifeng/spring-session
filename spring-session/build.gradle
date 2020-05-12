@@ -111,3 +111,18 @@ test {
 integrationTest {
 	jvmArgs "-javaagent:${configurations.jacoco.asPath}=destfile=${buildDir}/jacoco.exec,includes=${project.group}.*"
 }
+
+apply plugin: 'maven'
+
+uploadArchives {
+	repositories {
+		mavenDeployer {
+			repository(url: release_url) {
+				authentication(userName: "admin", password: "Kyligence@2016")
+			}
+			pom.version = version
+			pom.artifactId = artifact_id
+			pom.groupId = group_id
+		}
+	}
+}
