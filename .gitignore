@@ -12,5 +12,6 @@ out
 *.rdb
 .checkstyle
 !etc/eclipse/.checkstyle
+gradle/
 !**/src/**/build
 .DS_Store
