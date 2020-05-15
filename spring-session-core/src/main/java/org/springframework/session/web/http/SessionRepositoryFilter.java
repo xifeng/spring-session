@@ -17,6 +17,7 @@
 package org.springframework.session.web.http;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
@@ -104,6 +105,18 @@ public class SessionRepositoryFilter<S extends Session> extends OncePerRequestFi
 	private final SessionRepository<S> sessionRepository;
 
 	private HttpSessionIdResolver httpSessionIdResolver = new CookieHttpSessionIdResolver();
+
+	private String skipCommitSessionHeaderName = "Auto";
+
+	public void setSkipCommitSessionHeaderName(String skipCommitSessionHeaderName) {
+		this.skipCommitSessionHeaderName = skipCommitSessionHeaderName;
+	}
+
+	private int sessionTimeout = -1;
+
+	public void setSessionTimeout(int sessionTimeout) {
+	    this.sessionTimeout = sessionTimeout;
+    }
 
 	/**
 	 * Creates a new instance.
@@ -221,6 +234,10 @@ public class SessionRepositoryFilter<S extends Session> extends OncePerRequestFi
 				}
 			}
 			else {
+				if (Boolean.valueOf(this.getHeader(skipCommitSessionHeaderName))) {
+					return;
+				}
+
 				S session = wrappedSession.getSession();
 				clearRequestedSessionCache();
 				SessionRepositoryFilter.this.sessionRepository.save(session);
@@ -321,6 +338,11 @@ public class SessionRepositoryFilter<S extends Session> extends OncePerRequestFi
 						new RuntimeException("For debugging purposes only (not an error)"));
 			}
 			S session = SessionRepositoryFilter.this.sessionRepository.createSession();
+            if (sessionTimeout > 60) {
+				session.setMaxInactiveInterval(Duration.ofSeconds(sessionTimeout));
+            } else if (sessionTimeout > 0) {
+				session.setMaxInactiveInterval(Duration.ofSeconds(60));
+            }
 			session.setLastAccessedTime(Instant.now());
 			currentSession = new HttpSessionWrapper(session, getServletContext());
 			setCurrentSession(currentSession);
