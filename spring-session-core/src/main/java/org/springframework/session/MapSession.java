@@ -16,7 +16,11 @@
 
 package org.springframework.session;
 
+import org.springframework.session.config.annotation.web.http.SpringHttpSessionConfiguration;
+import org.springframework.util.DigestUtils;
+
 import java.io.Serializable;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -223,7 +227,16 @@ public final class MapSession implements Session, Serializable {
 	}
 
 	private static String generateId() {
-		return UUID.randomUUID().toString();
+		if(SpringHttpSessionConfiguration.secureRandomCreateEnabled){
+			byte[] salt = new byte[36];
+			SecureRandom secureRandom = new SecureRandom();
+			secureRandom.setSeed(System.currentTimeMillis());
+			secureRandom.nextBytes(salt);
+			return DigestUtils.md5DigestAsHex(salt);
+		}
+		else{
+			return UUID.randomUUID().toString();
+		}
 	}
 
 	private static final long serialVersionUID = 7160779239673823561L;
