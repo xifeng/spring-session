@@ -25,6 +25,7 @@ import javax.servlet.http.HttpSessionListener;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
@@ -103,6 +104,12 @@ public class SpringHttpSessionConfiguration implements ApplicationContextAware {
 
 	private List<HttpSessionListener> httpSessionListeners = new ArrayList<HttpSessionListener>();
 
+	@Value("${kylin.web.session-skip-header-name:Auto}")
+	private String skipUpdateSessionHeaderName;
+
+	@Value("${kylin.web.session-timeout:-1}")
+	private int sessionTimeout;
+
 	@PostConstruct
 	public void init() {
 		if (this.cookieSerializer != null) {
@@ -126,6 +133,8 @@ public class SpringHttpSessionConfiguration implements ApplicationContextAware {
 			SessionRepository<S> sessionRepository) {
 		SessionRepositoryFilter<S> sessionRepositoryFilter = new SessionRepositoryFilter<S>(
 				sessionRepository);
+		sessionRepositoryFilter.setSessionTimeout(this.sessionTimeout);
+		sessionRepositoryFilter.setSkipCommitSessionHeaderName(this.skipUpdateSessionHeaderName);
 		sessionRepositoryFilter.setServletContext(this.servletContext);
 		if (this.httpSessionStrategy instanceof MultiHttpSessionStrategy) {
 			sessionRepositoryFilter.setHttpSessionStrategy(

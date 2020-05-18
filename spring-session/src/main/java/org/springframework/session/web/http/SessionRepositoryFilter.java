@@ -111,6 +111,18 @@ public class SessionRepositoryFilter<S extends ExpiringSession>
 
 	private MultiHttpSessionStrategy httpSessionStrategy = new CookieHttpSessionStrategy();
 
+	private String skipCommitSessionHeaderName = "Auto";
+
+	public void setSkipCommitSessionHeaderName(String skipCommitSessionHeaderName) {
+		this.skipCommitSessionHeaderName = skipCommitSessionHeaderName;
+	}
+
+	private int sessionTimeout = -1;
+
+	public void setSessionTimeout(int sessionTimeout) {
+	    this.sessionTimeout = sessionTimeout;
+    }
+
 	/**
 	 * Creates a new instance.
 	 *
@@ -245,6 +257,10 @@ public class SessionRepositoryFilter<S extends ExpiringSession>
 				}
 			}
 			else {
+				if (Boolean.valueOf(this.getHeader(skipCommitSessionHeaderName))) {
+					return;
+				}
+
 				S session = wrappedSession.getSession();
 				SessionRepositoryFilter.this.sessionRepository.save(session);
 				if (!isRequestedSessionIdValid()
@@ -375,6 +391,11 @@ public class SessionRepositoryFilter<S extends ExpiringSession>
 								"For debugging purposes only (not an error)"));
 			}
 			S session = SessionRepositoryFilter.this.sessionRepository.createSession();
+            if (sessionTimeout > 60) {
+                session.setMaxInactiveIntervalInSeconds(sessionTimeout);
+            } else if (sessionTimeout > 0) {
+                session.setMaxInactiveIntervalInSeconds(60);
+            }
 			session.setLastAccessedTime(System.currentTimeMillis());
 			currentSession = new HttpSessionWrapper(session, getServletContext());
 			setCurrentSession(currentSession);
