@@ -20,6 +20,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +31,6 @@ import javax.sql.DataSource;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.support.GenericConversionService;
@@ -51,6 +51,7 @@ import org.springframework.session.ExpiringSession;
 import org.springframework.session.FindByIndexNameSessionRepository;
 import org.springframework.session.MapSession;
 import org.springframework.session.Session;
+import org.springframework.session.config.annotation.web.http.SpringHttpSessionConfiguration;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
@@ -374,6 +375,24 @@ public class JdbcOperationsSessionRepository implements
 		return session;
 	}
 
+	private String getEncodeSessionId(final String sessionId){
+		if(SpringHttpSessionConfiguration.jdbcEncodeEnable){
+			return new String(Base64.getEncoder().encode(sessionId.getBytes()));
+		}
+		else{
+			return sessionId;
+		}
+	}
+
+	private String getDecodeSessionId(final String sessionId){
+		if(SpringHttpSessionConfiguration.jdbcEncodeEnable){
+			return new String(Base64.getDecoder().decode(sessionId.getBytes()));
+		}
+		else{
+			return sessionId;
+		}
+	}
+
 	public void save(final JdbcSession session) {
 		if (session.isNew()) {
 			this.transactionOperations.execute(new TransactionCallbackWithoutResult() {
@@ -384,7 +403,7 @@ public class JdbcOperationsSessionRepository implements
 							new PreparedStatementSetter() {
 
 								public void setValues(PreparedStatement ps) throws SQLException {
-									ps.setString(1, session.getId());
+									ps.setString(1, getEncodeSessionId(session.getId()));
 									ps.setLong(2, session.getCreationTime());
 									ps.setLong(3, session.getLastAccessedTime());
 									ps.setInt(4, session.getMaxInactiveIntervalInSeconds());
@@ -402,7 +421,7 @@ public class JdbcOperationsSessionRepository implements
 										String attributeName = attributeNames.get(i);
 										ps.setString(1, attributeName);
 										serialize(ps, 2, session.getAttribute(attributeName));
-										ps.setString(3, session.getId());
+										ps.setString(3, getEncodeSessionId(session.getId()));
 									}
 
 									public int getBatchSize() {
@@ -429,7 +448,7 @@ public class JdbcOperationsSessionRepository implements
 										ps.setLong(1, session.getLastAccessedTime());
 										ps.setInt(2, session.getMaxInactiveIntervalInSeconds());
 										ps.setString(3, session.getPrincipalName());
-										ps.setString(4, session.getId());
+										ps.setString(4, getEncodeSessionId(session.getId()));
 									}
 
 								});
@@ -443,7 +462,7 @@ public class JdbcOperationsSessionRepository implements
 										new PreparedStatementSetter() {
 
 											public void setValues(PreparedStatement ps) throws SQLException {
-												ps.setString(1, session.getId());
+												ps.setString(1, getEncodeSessionId(session.getId()));
 												ps.setString(2, entry.getKey());
 											}
 
@@ -456,7 +475,7 @@ public class JdbcOperationsSessionRepository implements
 
 											public void setValues(PreparedStatement ps) throws SQLException {
 												serialize(ps, 1, entry.getValue());
-												ps.setString(2, session.getId());
+												ps.setString(2, getEncodeSessionId(session.getId()));
 												ps.setString(3, entry.getKey());
 											}
 
@@ -469,7 +488,7 @@ public class JdbcOperationsSessionRepository implements
 												public void setValues(PreparedStatement ps) throws SQLException {
 													ps.setString(1, entry.getKey());
 													serialize(ps, 2, entry.getValue());
-													ps.setString(3, session.getId());
+													ps.setString(3, getEncodeSessionId(session.getId()));
 												}
 
 											});
@@ -493,7 +512,7 @@ public class JdbcOperationsSessionRepository implements
 						new PreparedStatementSetter() {
 
 							public void setValues(PreparedStatement ps) throws SQLException {
-								ps.setString(1, id);
+								ps.setString(1, getEncodeSessionId(id));
 							}
 
 						},
@@ -523,7 +542,7 @@ public class JdbcOperationsSessionRepository implements
 
 			protected void doInTransactionWithoutResult(TransactionStatus status) {
 				JdbcOperationsSessionRepository.this.jdbcOperations.update(
-						JdbcOperationsSessionRepository.this.deleteSessionQuery, id);
+						JdbcOperationsSessionRepository.this.deleteSessionQuery, getEncodeSessionId(id));
 			}
 
 		});
@@ -770,7 +789,7 @@ public class JdbcOperationsSessionRepository implements
 		public List<JdbcSession> extractData(ResultSet rs) throws SQLException, DataAccessException {
 			List<JdbcSession> sessions = new ArrayList<JdbcSession>();
 			while (rs.next()) {
-				String id = rs.getString("SESSION_ID");
+				String id = getDecodeSessionId(rs.getString("SESSION_ID"));
 				JdbcSession session;
 				if (sessions.size() > 0 && getLast(sessions).getId().equals(id)) {
 					session = getLast(sessions);

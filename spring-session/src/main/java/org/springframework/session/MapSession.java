@@ -17,12 +17,16 @@
 package org.springframework.session;
 
 import java.io.Serializable;
+import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import org.springframework.session.config.annotation.web.http.SpringHttpSessionConfiguration;
+import org.springframework.util.DigestUtils;
 
 /**
  * <p>
@@ -54,17 +58,24 @@ public final class MapSession implements ExpiringSession, Serializable {
 	private Map<String, Object> sessionAttrs = new HashMap<String, Object>();
 	private long creationTime = System.currentTimeMillis();
 	private long lastAccessedTime = this.creationTime;
-
 	/**
 	 * Defaults to 30 minutes.
 	 */
 	private int maxInactiveInterval = DEFAULT_MAX_INACTIVE_INTERVAL_SECONDS;
-
 	/**
 	 * Creates a new instance with a secure randomly generated identifier.
 	 */
 	public MapSession() {
-		this(UUID.randomUUID().toString());
+		if(SpringHttpSessionConfiguration.secureRandomCreateEnabled){
+			byte[] salt = new byte[36];
+			SecureRandom secureRandom = new SecureRandom();
+			secureRandom.setSeed(System.currentTimeMillis());
+			secureRandom.nextBytes(salt);
+			this.id = DigestUtils.md5DigestAsHex(salt);
+		}
+		else{
+			this.id = UUID.randomUUID().toString();
+		}
 	}
 
 	/**

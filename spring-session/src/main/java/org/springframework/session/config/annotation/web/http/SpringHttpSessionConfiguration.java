@@ -110,6 +110,19 @@ public class SpringHttpSessionConfiguration implements ApplicationContextAware {
 	@Value("${kylin.web.session-timeout:-1}")
 	private int sessionTimeout;
 
+	public static boolean secureRandomCreateEnabled;
+	@Value("${kylin.web.session.secure-random-create-enabled:false}")
+	public void setSecureRandomCreateEnabled(boolean enabled) {
+		secureRandomCreateEnabled = enabled;
+	}
+
+	public static boolean jdbcEncodeEnable;
+	@Value("${kylin.web.session.jdbc-encode-enabled:false}")
+	public void setJdbcEncodeEnable(boolean enabled) {
+		jdbcEncodeEnable = enabled;
+	}
+
+
 	@PostConstruct
 	public void init() {
 		if (this.cookieSerializer != null) {
