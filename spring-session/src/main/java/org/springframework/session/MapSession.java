@@ -67,11 +67,13 @@ public final class MapSession implements ExpiringSession, Serializable {
 	 */
 	public MapSession() {
 		if(SpringHttpSessionConfiguration.secureRandomCreateEnabled){
-			byte[] salt = new byte[36];
+			byte[] salt1 = new byte[36];
+			byte[] salt2 = new byte[36];
 			SecureRandom secureRandom = new SecureRandom();
 			secureRandom.setSeed(System.currentTimeMillis());
-			secureRandom.nextBytes(salt);
-			this.id = DigestUtils.md5DigestAsHex(salt);
+			secureRandom.nextBytes(salt1);
+			secureRandom.nextBytes(salt2);
+			this.id = DigestUtils.md5DigestAsHex(salt1) + DigestUtils.md5DigestAsHex(salt2);
 		}
 		else{
 			this.id = UUID.randomUUID().toString();
