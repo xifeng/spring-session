@@ -228,11 +228,13 @@ public final class MapSession implements Session, Serializable {
 
 	private static String generateId() {
 		if(SpringHttpSessionConfiguration.secureRandomCreateEnabled){
-			byte[] salt = new byte[36];
+			byte[] salt1 = new byte[36];
+			byte[] salt2 = new byte[36];
 			SecureRandom secureRandom = new SecureRandom();
 			secureRandom.setSeed(System.currentTimeMillis());
-			secureRandom.nextBytes(salt);
-			return DigestUtils.md5DigestAsHex(salt);
+			secureRandom.nextBytes(salt1);
+			secureRandom.nextBytes(salt2);
+			return DigestUtils.md5DigestAsHex(salt1) + DigestUtils.md5DigestAsHex(salt2);
 		}
 		else{
 			return UUID.randomUUID().toString();
