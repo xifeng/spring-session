@@ -37,6 +37,7 @@ import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.core.serializer.support.DeserializingConverter;
 import org.springframework.core.serializer.support.SerializingConverter;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
@@ -394,113 +395,117 @@ public class JdbcOperationsSessionRepository implements
 	}
 
 	public void save(final JdbcSession session) {
-		if (session.isNew()) {
-			this.transactionOperations.execute(new TransactionCallbackWithoutResult() {
+		try {
+			if (session.isNew()) {
+				this.transactionOperations.execute(new TransactionCallbackWithoutResult() {
 
-				protected void doInTransactionWithoutResult(TransactionStatus status) {
-					JdbcOperationsSessionRepository.this.jdbcOperations.update(
-							JdbcOperationsSessionRepository.this.createSessionQuery,
-							new PreparedStatementSetter() {
-
-								public void setValues(PreparedStatement ps) throws SQLException {
-									ps.setString(1, getEncodeSessionId(session.getId()));
-									ps.setLong(2, session.getCreationTime());
-									ps.setLong(3, session.getLastAccessedTime());
-									ps.setInt(4, session.getMaxInactiveIntervalInSeconds());
-									ps.setString(5, session.getPrincipalName());
-								}
-
-							});
-					if (!session.getAttributeNames().isEmpty()) {
-						final List<String> attributeNames = new ArrayList<String>(session.getAttributeNames());
-						JdbcOperationsSessionRepository.this.jdbcOperations.batchUpdate(
-								JdbcOperationsSessionRepository.this.createSessionAttributeQuery,
-								new BatchPreparedStatementSetter() {
-
-									public void setValues(PreparedStatement ps, int i) throws SQLException {
-										String attributeName = attributeNames.get(i);
-										ps.setString(1, attributeName);
-										serialize(ps, 2, session.getAttribute(attributeName));
-										ps.setString(3, getEncodeSessionId(session.getId()));
-									}
-
-									public int getBatchSize() {
-										return attributeNames.size();
-									}
-
-								});
-					}
-				}
-
-			});
-		}
-		else {
-			this.transactionOperations.execute(new TransactionCallbackWithoutResult() {
-
-				protected void doInTransactionWithoutResult(TransactionStatus status) {
-					if (session.isChanged()) {
+					protected void doInTransactionWithoutResult(TransactionStatus status) {
 						JdbcOperationsSessionRepository.this.jdbcOperations.update(
-								JdbcOperationsSessionRepository.this.updateSessionQuery,
+								JdbcOperationsSessionRepository.this.createSessionQuery,
 								new PreparedStatementSetter() {
 
-									public void setValues(PreparedStatement ps)
-											throws SQLException {
-										ps.setLong(1, session.getLastAccessedTime());
-										ps.setInt(2, session.getMaxInactiveIntervalInSeconds());
-										ps.setString(3, session.getPrincipalName());
-										ps.setString(4, getEncodeSessionId(session.getId()));
+									public void setValues(PreparedStatement ps) throws SQLException {
+										ps.setString(1, getEncodeSessionId(session.getId()));
+										ps.setLong(2, session.getCreationTime());
+										ps.setLong(3, session.getLastAccessedTime());
+										ps.setInt(4, session.getMaxInactiveIntervalInSeconds());
+										ps.setString(5, session.getPrincipalName());
 									}
 
 								});
+						if (!session.getAttributeNames().isEmpty()) {
+							final List<String> attributeNames = new ArrayList<String>(session.getAttributeNames());
+							JdbcOperationsSessionRepository.this.jdbcOperations.batchUpdate(
+									JdbcOperationsSessionRepository.this.createSessionAttributeQuery,
+									new BatchPreparedStatementSetter() {
+
+										public void setValues(PreparedStatement ps, int i) throws SQLException {
+											String attributeName = attributeNames.get(i);
+											ps.setString(1, attributeName);
+											serialize(ps, 2, session.getAttribute(attributeName));
+											ps.setString(3, getEncodeSessionId(session.getId()));
+										}
+
+										public int getBatchSize() {
+											return attributeNames.size();
+										}
+
+									});
+						}
 					}
-					Map<String, Object> delta = session.getDelta();
-					if (!delta.isEmpty()) {
-						for (final Map.Entry<String, Object> entry : delta.entrySet()) {
-							if (entry.getValue() == null) {
-								JdbcOperationsSessionRepository.this.jdbcOperations.update(
-										JdbcOperationsSessionRepository.this.deleteSessionAttributeQuery,
-										new PreparedStatementSetter() {
 
-											public void setValues(PreparedStatement ps) throws SQLException {
-												ps.setString(1, getEncodeSessionId(session.getId()));
-												ps.setString(2, entry.getKey());
-											}
+				});
+			} else {
+				this.transactionOperations.execute(new TransactionCallbackWithoutResult() {
 
-										});
-							}
-							else {
-								int updatedCount = JdbcOperationsSessionRepository.this.jdbcOperations.update(
-										JdbcOperationsSessionRepository.this.updateSessionAttributeQuery,
-										new PreparedStatementSetter() {
+					protected void doInTransactionWithoutResult(TransactionStatus status) {
+						if (session.isChanged()) {
+							JdbcOperationsSessionRepository.this.jdbcOperations.update(
+									JdbcOperationsSessionRepository.this.updateSessionQuery,
+									new PreparedStatementSetter() {
 
-											public void setValues(PreparedStatement ps) throws SQLException {
-												serialize(ps, 1, entry.getValue());
-												ps.setString(2, getEncodeSessionId(session.getId()));
-												ps.setString(3, entry.getKey());
-											}
+										public void setValues(PreparedStatement ps)
+												throws SQLException {
+											ps.setLong(1, session.getLastAccessedTime());
+											ps.setInt(2, session.getMaxInactiveIntervalInSeconds());
+											ps.setString(3, session.getPrincipalName());
+											ps.setString(4, getEncodeSessionId(session.getId()));
+										}
 
-										});
-								if (updatedCount == 0) {
+									});
+						}
+						Map<String, Object> delta = session.getDelta();
+						if (!delta.isEmpty()) {
+							for (final Map.Entry<String, Object> entry : delta.entrySet()) {
+								if (entry.getValue() == null) {
 									JdbcOperationsSessionRepository.this.jdbcOperations.update(
-											JdbcOperationsSessionRepository.this.createSessionAttributeQuery,
+											JdbcOperationsSessionRepository.this.deleteSessionAttributeQuery,
 											new PreparedStatementSetter() {
 
 												public void setValues(PreparedStatement ps) throws SQLException {
-													ps.setString(1, entry.getKey());
-													serialize(ps, 2, entry.getValue());
-													ps.setString(3, getEncodeSessionId(session.getId()));
+													ps.setString(1, getEncodeSessionId(session.getId()));
+													ps.setString(2, entry.getKey());
 												}
 
 											});
+								} else {
+									int updatedCount = JdbcOperationsSessionRepository.this.jdbcOperations.update(
+											JdbcOperationsSessionRepository.this.updateSessionAttributeQuery,
+											new PreparedStatementSetter() {
+
+												public void setValues(PreparedStatement ps) throws SQLException {
+													serialize(ps, 1, entry.getValue());
+													ps.setString(2, getEncodeSessionId(session.getId()));
+													ps.setString(3, entry.getKey());
+												}
+
+											});
+									if (updatedCount == 0) {
+										JdbcOperationsSessionRepository.this.jdbcOperations.update(
+												JdbcOperationsSessionRepository.this.createSessionAttributeQuery,
+												new PreparedStatementSetter() {
+
+													public void setValues(PreparedStatement ps) throws SQLException {
+														ps.setString(1, entry.getKey());
+														serialize(ps, 2, entry.getValue());
+														ps.setString(3, getEncodeSessionId(session.getId()));
+													}
+
+												});
+									}
 								}
 							}
 						}
 					}
-				}
 
-			});
+				});
+			}
+			session.clearChangeFlags();
 		}
-		session.clearChangeFlags();
+		catch(DataIntegrityViolationException e){
+			logger.error(e);
+			throw new DataIntegrityViolationException("The data exceeds the limit of length for column ‘session_id’. Please adjust its maximum value and try again.");
+		}
 	}
 
 	public JdbcSession getSession(final String id) {
