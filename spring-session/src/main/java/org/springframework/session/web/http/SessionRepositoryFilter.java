@@ -262,7 +262,11 @@ public class SessionRepositoryFilter<S extends ExpiringSession>
 				}
 
 				S session = wrappedSession.getSession();
-				SessionRepositoryFilter.this.sessionRepository.save(session);
+				try {
+					SessionRepositoryFilter.this.sessionRepository.save(session);
+				} catch (Exception e) {
+					throw new SaveSessionException("Failed to save session!", e);
+				}
 				if (!isRequestedSessionIdValid()
 						|| !session.getId().equals(getRequestedSessionId())) {
 					SessionRepositoryFilter.this.httpSessionStrategy.onNewSession(session,
