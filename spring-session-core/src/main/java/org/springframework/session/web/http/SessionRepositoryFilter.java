@@ -240,7 +240,11 @@ public class SessionRepositoryFilter<S extends Session> extends OncePerRequestFi
 
 				S session = wrappedSession.getSession();
 				clearRequestedSessionCache();
-				SessionRepositoryFilter.this.sessionRepository.save(session);
+				try {
+					SessionRepositoryFilter.this.sessionRepository.save(session);
+				} catch (Exception e) {
+					throw new SaveSessionException("Failed to save session!", e);
+				}
 				String sessionId = session.getId();
 				if (!isRequestedSessionIdValid() || !sessionId.equals(getRequestedSessionId())) {
 					SessionRepositoryFilter.this.httpSessionIdResolver.setSessionId(this, this.response, sessionId);
