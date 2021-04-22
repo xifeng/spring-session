@@ -241,7 +241,11 @@ public class SessionRepositoryFilter<S extends Session> extends OncePerRequestFi
 				S session = wrappedSession.getSession();
 				clearRequestedSessionCache();
 				try {
-					SessionRepositoryFilter.this.sessionRepository.save(session);
+					S sourceSession = SessionRepositoryFilter.this.sessionRepository.findById(session.getId());
+					if ( null == sourceSession || (System.currentTimeMillis() -
+							sourceSession.getLastAccessedTime().toEpochMilli()) > session.getMaxInactiveInterval().toMillis() * 500 ) {
+						SessionRepositoryFilter.this.sessionRepository.save(session);
+					}
 				} catch (Exception e) {
 					throw new SaveSessionException("Failed to save session!", e);
 				}
