@@ -263,7 +263,11 @@ public class SessionRepositoryFilter<S extends ExpiringSession>
 
 				S session = wrappedSession.getSession();
 				try {
-					SessionRepositoryFilter.this.sessionRepository.save(session);
+					S sourceSession = SessionRepositoryFilter.this.sessionRepository.getSession(session.getId());
+					if ( null == sourceSession || (System.currentTimeMillis() -
+							sourceSession.getLastAccessedTime()) > session.getMaxInactiveIntervalInSeconds() * 500 ) {
+						SessionRepositoryFilter.this.sessionRepository.save(session);
+					}
 				} catch (Exception e) {
 					throw new SaveSessionException("Failed to save session!", e);
 				}
