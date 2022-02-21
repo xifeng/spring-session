@@ -26,6 +26,10 @@ buildscript {
 	}
 }
 
+plugins {
+    id 'maven-publish'
+}
+
 apply plugin: 'io.spring.convention.root'
 
 group = 'org.springframework.session'
@@ -46,3 +50,21 @@ subprojects {
 nohttp {
     source.exclude "buildSrc/build/**"
 }
+
+
+configure(subprojects) {project -> {
+	apply plugin: 'maven-publish'
+
+	publishing {
+		repositories {
+			maven {
+				url = release_url
+				name = 'kyligence'
+				credentials {
+					username 'admin'
+					password 'Kyligence@2016'
+				}
+			}
+		}
+	}
+}}
