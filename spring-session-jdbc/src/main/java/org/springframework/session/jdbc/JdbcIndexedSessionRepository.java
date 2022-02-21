@@ -813,11 +813,11 @@ public class JdbcIndexedSessionRepository
 			}
 		}
 
-		private String getEncodeSessionId(final String sessionId){
-			if(SpringHttpSessionConfiguration.jdbcEncodeEnable){
+		private String getEncodeSessionId(final String sessionId) {
+			if (SpringHttpSessionConfiguration.jdbcEncodeEnable) {
 				return new String(Base64.getEncoder().encode(sessionId.getBytes()));
 			}
-			else{
+			else {
 				return sessionId;
 			}
 		}
@@ -844,7 +844,8 @@ public class JdbcIndexedSessionRepository
 							insertSessionAttributes(JdbcSession.this, new ArrayList<>(attributeNames));
 						}
 					});
-				} else {
+				}
+				else {
 					JdbcIndexedSessionRepository.this.transactionOperations.executeWithoutResult((status) -> {
 						if (JdbcSession.this.changed) {
 							Map<String, String> indexes = JdbcIndexedSessionRepository.this.indexResolver
@@ -880,9 +881,11 @@ public class JdbcIndexedSessionRepository
 					});
 				}
 				clearChangeFlags();
-			} catch(DataIntegrityViolationException e){
-				logger.error(e);
-				throw new DataIntegrityViolationException("The data exceeds the limit of length for column ?session_id?. Please adjust its maximum value and try again.");
+			}
+			catch (DataIntegrityViolationException ex) {
+				logger.error(ex);
+				throw new DataIntegrityViolationException(
+						"The data exceeds the limit of length for column ?session_id?. Please adjust its maximum value and try again.");
 			}
 		}
 
@@ -921,11 +924,11 @@ public class JdbcIndexedSessionRepository
 			return sessions.get(sessions.size() - 1);
 		}
 
-		private String getDecodeSessionId(final String sessionId){
-			if(SpringHttpSessionConfiguration.jdbcEncodeEnable){
+		private String getDecodeSessionId(final String sessionId) {
+			if (SpringHttpSessionConfiguration.jdbcEncodeEnable) {
 				return new String(Base64.getDecoder().decode(sessionId.getBytes()));
 			}
-			else{
+			else {
 				return sessionId;
 			}
 		}

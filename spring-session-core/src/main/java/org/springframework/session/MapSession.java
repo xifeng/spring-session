@@ -16,9 +16,6 @@
 
 package org.springframework.session;
 
-import org.springframework.session.config.annotation.web.http.SpringHttpSessionConfiguration;
-import org.springframework.util.DigestUtils;
-
 import java.io.Serializable;
 import java.security.SecureRandom;
 import java.time.Duration;
@@ -28,6 +25,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
+import org.springframework.session.config.annotation.web.http.SpringHttpSessionConfiguration;
+import org.springframework.util.DigestUtils;
 
 /**
  * <p>
@@ -227,7 +227,7 @@ public final class MapSession implements Session, Serializable {
 	}
 
 	private static String generateId() {
-		if(SpringHttpSessionConfiguration.secureRandomCreateEnabled){
+		if (SpringHttpSessionConfiguration.secureRandomCreateEnabled) {
 			byte[] salt1 = new byte[36];
 			byte[] salt2 = new byte[36];
 			SecureRandom secureRandom = new SecureRandom();
@@ -236,7 +236,7 @@ public final class MapSession implements Session, Serializable {
 			secureRandom.nextBytes(salt2);
 			return DigestUtils.md5DigestAsHex(salt1) + DigestUtils.md5DigestAsHex(salt2);
 		}
-		else{
+		else {
 			return UUID.randomUUID().toString();
 		}
 	}

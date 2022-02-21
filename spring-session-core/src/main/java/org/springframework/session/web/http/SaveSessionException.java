@@ -18,20 +18,20 @@ package org.springframework.session.web.http;
 
 public class SaveSessionException extends RuntimeException {
 
-    public SaveSessionException() {
-        super();
-    }
+	public SaveSessionException() {
+		super();
+	}
 
-    public SaveSessionException(String s) {
-        super(s);
-    }
+	public SaveSessionException(String s) {
+		super(s);
+	}
 
-    public SaveSessionException(String message, Throwable cause) {
-        super(message, cause);
-    }
+	public SaveSessionException(String message, Throwable cause) {
+		super(message, cause);
+	}
 
-    public SaveSessionException(Throwable cause) {
-        super(cause);
-    }
+	public SaveSessionException(Throwable cause) {
+		super(cause);
+	}
 
 }

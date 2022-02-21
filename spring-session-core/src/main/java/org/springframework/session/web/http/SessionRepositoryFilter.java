@@ -115,8 +115,8 @@ public class SessionRepositoryFilter<S extends Session> extends OncePerRequestFi
 	private int sessionTimeout = -1;
 
 	public void setSessionTimeout(int sessionTimeout) {
-	    this.sessionTimeout = sessionTimeout;
-    }
+		this.sessionTimeout = sessionTimeout;
+	}
 
 	/**
 	 * Creates a new instance.
@@ -234,7 +234,7 @@ public class SessionRepositoryFilter<S extends Session> extends OncePerRequestFi
 				}
 			}
 			else {
-				if (Boolean.valueOf(this.getHeader(skipCommitSessionHeaderName))) {
+				if (Boolean.valueOf(this.getHeader(SessionRepositoryFilter.this.skipCommitSessionHeaderName))) {
 					return;
 				}
 
@@ -242,12 +242,14 @@ public class SessionRepositoryFilter<S extends Session> extends OncePerRequestFi
 				clearRequestedSessionCache();
 				try {
 					S sourceSession = SessionRepositoryFilter.this.sessionRepository.findById(session.getId());
-					if ( null == sourceSession || (System.currentTimeMillis() -
-							sourceSession.getLastAccessedTime().toEpochMilli()) > session.getMaxInactiveInterval().toMillis() * 500 ) {
+					if (null == sourceSession || (System.currentTimeMillis()
+							- sourceSession.getLastAccessedTime().toEpochMilli()) > session.getMaxInactiveInterval()
+									.toMillis() * 500) {
 						SessionRepositoryFilter.this.sessionRepository.save(session);
 					}
-				} catch (Exception e) {
-					throw new SaveSessionException("Failed to save session!", e);
+				}
+				catch (Exception ex) {
+					throw new SaveSessionException("Failed to save session!", ex);
 				}
 				String sessionId = session.getId();
 				if (!isRequestedSessionIdValid() || !sessionId.equals(getRequestedSessionId())) {
@@ -346,11 +348,12 @@ public class SessionRepositoryFilter<S extends Session> extends OncePerRequestFi
 						new RuntimeException("For debugging purposes only (not an error)"));
 			}
 			S session = SessionRepositoryFilter.this.sessionRepository.createSession();
-            if (sessionTimeout > 60) {
-				session.setMaxInactiveInterval(Duration.ofSeconds(sessionTimeout));
-            } else if (sessionTimeout > 0) {
+			if (SessionRepositoryFilter.this.sessionTimeout > 60) {
+				session.setMaxInactiveInterval(Duration.ofSeconds(SessionRepositoryFilter.this.sessionTimeout));
+			}
+			else if (SessionRepositoryFilter.this.sessionTimeout > 0) {
 				session.setMaxInactiveInterval(Duration.ofSeconds(60));
-            }
+			}
 			session.setLastAccessedTime(Instant.now());
 			currentSession = new HttpSessionWrapper(session, getServletContext());
 			setCurrentSession(currentSession);
