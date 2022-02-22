@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -227,6 +228,7 @@ public final class MapSession implements Session, Serializable {
 	}
 
 	private static String generateId() {
+		String id;
 		if (SpringHttpSessionConfiguration.secureRandomCreateEnabled) {
 			byte[] salt1 = new byte[36];
 			byte[] salt2 = new byte[36];
@@ -234,11 +236,17 @@ public final class MapSession implements Session, Serializable {
 			secureRandom.setSeed(System.currentTimeMillis());
 			secureRandom.nextBytes(salt1);
 			secureRandom.nextBytes(salt2);
-			return DigestUtils.md5DigestAsHex(salt1) + DigestUtils.md5DigestAsHex(salt2);
+			id = DigestUtils.md5DigestAsHex(salt1) + DigestUtils.md5DigestAsHex(salt2);
 		}
 		else {
-			return UUID.randomUUID().toString();
+			id = UUID.randomUUID().toString();
 		}
+
+		if (SpringHttpSessionConfiguration.jdbcEncodeEnable) {
+			return new String(Base64.getEncoder().encode(id.getBytes()));
+		}
+
+		return id;
 	}
 
 	private static final long serialVersionUID = 7160779239673823561L;
