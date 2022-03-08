@@ -242,10 +242,16 @@ public class SessionRepositoryFilter<S extends Session> extends OncePerRequestFi
 				clearRequestedSessionCache();
 				try {
 					S sourceSession = SessionRepositoryFilter.this.sessionRepository.findById(session.getId());
-					if (null == sourceSession || (System.currentTimeMillis()
-							- sourceSession.getLastAccessedTime().toEpochMilli()) > session.getMaxInactiveInterval()
-									.toMillis() * 500) {
+
+					if (null == sourceSession) {
 						SessionRepositoryFilter.this.sessionRepository.save(session);
+					}
+					else {
+						long halfExpireMillis = sourceSession.getLastAccessedTime().toEpochMilli()
+								+ session.getMaxInactiveInterval().toMillis() / 2;
+						if (System.currentTimeMillis() > halfExpireMillis) {
+							SessionRepositoryFilter.this.sessionRepository.save(session);
+						}
 					}
 				}
 				catch (Exception ex) {
